@@ -9,6 +9,8 @@ category: Development
 build-type: Simple
 cabal-version: >=1.10
 
+data-files: share/svgpan.js
+
 -- A longer description of the package.
 -- Description:
 

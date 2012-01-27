@@ -5,7 +5,7 @@ import Data.ByteString.Char8 ( unpack )
 import Data.LLVM.VisualizeGraph
 
 import Data.LLVM
-import Data.LLVM.CFG
+import Data.LLVM.Analysis.CFG
 import Data.LLVM.Analysis.Dominance
 
 main :: IO ()

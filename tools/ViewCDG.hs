@@ -5,8 +5,8 @@ import Data.ByteString.Char8 ( unpack )
 import Data.LLVM.VisualizeGraph
 
 import Data.LLVM
-import Data.LLVM.CFG
-import Data.LLVM.CDG
+import Data.LLVM.Analysis.CFG
+import Data.LLVM.Analysis.CDG
 
 main :: IO ()
 main = visualizeGraph optOptions mkCDGs cdgGraphvizRepr

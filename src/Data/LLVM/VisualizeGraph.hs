@@ -22,6 +22,7 @@ data Opts = Opts { inputFile :: Maybe FilePath
 
 data OutputType = CanvasOutput GraphvizCanvas
                 | FileOutput GraphvizOutput
+                | HtmlOutput
                 deriving (Show)
 
 cmdOpts :: Opts -> Mode Opts
@@ -69,6 +70,12 @@ visualizeGraph optOptions fromModule toGraph  = do
   let gs = fromModule m
 
   case outputFormat opts of
+    HtmlOutput -> do
+      -- Make a directory for all of the output and render each graph
+      -- with graphviz to svg format.  For each svg, create an html
+      -- wrapper page (with an index page).  The html page should be simple
+      -- and just embed the SVG and load svgpan (and maybe jquery)
+      return ()
     -- If we are showing canvases, ignore function names
     CanvasOutput o -> mapM_ (\(_,g) -> runGraphvizCanvas' (toGraph g) o) gs
     FileOutput o -> do
@@ -126,9 +133,11 @@ setOutput _ _ = Left "Only one output file is allowed"
 
 setFormat :: String -> Opts -> Either String Opts
 setFormat fmt opts =
-  case reads fmt of
-    [(Gtk, [])] -> Right opts { outputFormat = CanvasOutput Gtk }
-    [(Xlib, [])] -> Right opts { outputFormat = CanvasOutput Xlib }
+  case fmt of
+    "Html" -> Right opts { outputFormat = HtmlOutput }
     _ -> case reads fmt of
-      [(gout, [])] -> Right opts { outputFormat = FileOutput gout }
-      _ -> Left ("Unrecognized output format: " ++ fmt)
+      [(Gtk, [])] -> Right opts { outputFormat = CanvasOutput Gtk }
+      [(Xlib, [])] -> Right opts { outputFormat = CanvasOutput Xlib }
+      _ -> case reads fmt of
+        [(gout, [])] -> Right opts { outputFormat = FileOutput gout }
+        _ -> Left ("Unrecognized output format: " ++ fmt)
