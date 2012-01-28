@@ -10,9 +10,13 @@ import System.Directory
 import System.Exit
 import System.FilePath
 
+import Paths_llvm_tools
+
 import Data.LLVM
 import Data.LLVM.Testing ( buildModule )
 import Data.LLVM.Parse ( defaultParserOptions, parseLLVMFile )
+
+import Data.LLVM.HtmlWrapper
 
 data Opts = Opts { inputFile :: Maybe FilePath
                  , outputFile :: Maybe FilePath
@@ -71,16 +75,28 @@ visualizeGraph optOptions fromModule toGraph  = do
 
   case outputFormat opts of
     HtmlOutput -> do
+      when (isNothing (outputFile opts)) $ do
+        putStrLn "Output directory not specified"
+        exitFailure
       -- Make a directory for all of the output and render each graph
       -- with graphviz to svg format.  For each svg, create an html
       -- wrapper page (with an index page).  The html page should be simple
       -- and just embed the SVG and load svgpan (and maybe jquery)
+      let Just outFile = outputFile opts
+
+      createDirectoryIfMissing True (outFile </> "graphs")
+      jsFile <- getDataFileName "share/svgpan.js"
+      copyFile jsFile (outFile </> "graphs")
+
+      mapM_ (makeFunctionPage toGraph outFile) gs
+      writeHtmlIndex outFile (map fst gs)
+--      makeIndexPage outFile (map fst gs)
       return ()
     -- If we are showing canvases, ignore function names
     CanvasOutput o -> mapM_ (\(_,g) -> runGraphvizCanvas' (toGraph g) o) gs
     FileOutput o -> do
       when (isNothing (outputFile opts)) $ do
-        putStrLn "Output file missing"
+        putStrLn "Output file not specified"
         exitFailure
       let Just outFile = outputFile opts
       case gs of
@@ -90,6 +106,18 @@ visualizeGraph optOptions fromModule toGraph  = do
           -- the given directory
           createDirectoryIfMissing True outFile
           mapM_ (writeDotGraph toGraph outFile o) gs
+
+makeFunctionPage :: (PrintDotRepr dg n)
+                    => (a -> dg n)
+                    -> FilePath
+                    -> (FilePath, a)
+                    -> IO ()
+makeFunctionPage toGraph dirname (fname, g) = do
+  _ <- runGraphviz (toGraph g) Svg (dirname </> "graphs" </> gfilename)
+  writeHtmlWrapper (dirname </> "graphs") hfilename gfilename fname
+  where
+    gfilename = fname <.> "svg"
+    hfilename = fname <.> "html"
 
 writeDotGraph :: (PrintDotRepr dg n)
                  => (a -> dg n)
