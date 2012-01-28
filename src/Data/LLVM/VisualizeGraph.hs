@@ -1,5 +1,8 @@
 module Data.LLVM.VisualizeGraph ( visualizeGraph ) where
 
+import GHC.Conc ( getNumCapabilities )
+
+import Control.Concurrent.ParallelIO.Local
 import Control.Monad ( when )
 import Data.GraphViz
 import Data.Maybe ( isNothing )
@@ -86,14 +89,16 @@ visualizeGraph optOptions fromModule toGraph  = do
 
       createDirectoryIfMissing True (outFile </> "graphs")
       jsFile <- getDataFileName "share/svgpan.js"
-      copyFile jsFile (outFile </> "graphs")
+      copyFile jsFile (outFile </> "graphs" </> "svgpan.js")
 
-      mapM_ (makeFunctionPage toGraph outFile) gs
+      caps <- getNumCapabilities
+      let actions = map (makeFunctionPage toGraph outFile) gs
+      withPool caps $ \capPool -> parallel_ capPool actions
       writeHtmlIndex outFile (map fst gs)
---      makeIndexPage outFile (map fst gs)
-      return ()
+
     -- If we are showing canvases, ignore function names
     CanvasOutput o -> mapM_ (\(_,g) -> runGraphvizCanvas' (toGraph g) o) gs
+
     FileOutput o -> do
       when (isNothing (outputFile opts)) $ do
         putStrLn "Output file not specified"
