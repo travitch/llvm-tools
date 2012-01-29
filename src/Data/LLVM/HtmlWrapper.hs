@@ -10,13 +10,13 @@ import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 import Text.Blaze.Renderer.Utf8 ( renderHtml )
 
-writeHtmlWrapper :: FilePath -> FilePath -> FilePath -> String -> IO ()
-writeHtmlWrapper dirname hfilename gfilename fname = do
-  let wrapper = htmlWrapper fname gfilename
+writeHtmlWrapper :: FilePath -> FilePath -> FilePath -> String -> Double -> Double -> IO ()
+writeHtmlWrapper dirname hfilename gfilename fname w h = do
+  let wrapper = htmlWrapper fname gfilename w h
   LBS.writeFile (dirname </> hfilename) (renderHtml wrapper)
 
-htmlWrapper :: String -> FilePath -> Html
-htmlWrapper fname gfilename = H.docTypeHtml $ do
+htmlWrapper :: String -> FilePath -> Double -> Double -> Html
+htmlWrapper fname gfilename w h = H.docTypeHtml $ do
   H.head $ do
     H.title (toHtml fname)
     H.script ! A.src "OpenLayers.js" ! A.type_ "text/javascript" $ return ()
@@ -25,13 +25,14 @@ htmlWrapper fname gfilename = H.docTypeHtml $ do
     H.link ! A.href "graph.css" ! A.rel "stylesheet" ! A.type_ "text/css"
   H.body $ do
     H.div ! A.id "map" $ return ()
-    H.script ! A.type_ "text/javascript" $ H.preEscapedString (loadScript gfilename)
-  where
-    loadScript n = mconcat [ "$(window).bind('load', function () {"
-                           , "  showGraph('map', '", n
-                           , "');\n"
+    H.script ! A.type_ "text/javascript" $ H.preEscapedString (loadScript gfilename w h)
+
+loadScript :: String -> Double -> Double -> String
+loadScript n w h = mconcat [ "$(window).bind('load', function () {"
+                           , "  showGraph('map', '", n , "', ", show w, ", ", show h, ");\n"
                            , "});"
                            ]
+
 writeHtmlIndex :: FilePath -> [String] -> IO ()
 writeHtmlIndex dir funcNames =
   LBS.writeFile (dir </> "index.html") (renderHtml (htmlIndex funcNames))

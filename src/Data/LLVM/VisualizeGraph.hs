@@ -4,6 +4,7 @@ import GHC.Conc ( getNumCapabilities )
 
 import Control.Concurrent.ParallelIO.Local
 import Control.Monad ( when )
+import qualified Data.ByteString as BS
 import Data.GraphViz
 import Data.Maybe ( isNothing )
 
@@ -20,6 +21,7 @@ import Data.LLVM.Testing ( buildModule )
 import Data.LLVM.Parse ( defaultParserOptions, parseLLVMFile )
 
 import Data.LLVM.HtmlWrapper
+import Data.LLVM.SvgInspection
 
 data Opts = Opts { inputFile :: Maybe FilePath
                  , outputFile :: Maybe FilePath
@@ -126,8 +128,20 @@ makeFunctionPage :: (PrintDotRepr dg n)
                     -> (FilePath, a)
                     -> IO ()
 makeFunctionPage toGraph gdir (fname, g) = do
-  _ <- runGraphviz (toGraph g) Svg (gdir </> gfilename)
-  writeHtmlWrapper gdir hfilename gfilename fname
+  let svgname = gdir </> gfilename
+      dg = toGraph g
+  -- Use the more general graphvizWithHandle so that we can read the
+  -- generated image before writing it to disk.  This lets us extract
+  -- its dimensions.  The other alternative is to just use the default
+  -- graphviz to create a file and then read the file - this led to
+  -- races when writing with multiple threads.  This approach is
+  -- safer.
+  dims <- graphvizWithHandle (commandFor dg) dg Svg $ \h -> do
+    svgContent <- BS.hGetContents h
+    BS.writeFile svgname svgContent
+    return (getSvgSize svgContent)
+  let Just (w, h) = dims
+  writeHtmlWrapper gdir hfilename gfilename fname w h
   where
     gfilename = fname <.> "svg"
     hfilename = fname <.> "html"
