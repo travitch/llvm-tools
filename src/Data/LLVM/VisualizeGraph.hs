@@ -13,6 +13,7 @@ import System.Console.CmdArgs.Text
 import System.Directory
 import System.Exit
 import System.FilePath
+import System.FilePath.Glob
 
 import Paths_llvm_tools
 
@@ -91,10 +92,13 @@ visualizeGraph optOptions fromModule toGraph  = do
           gdir = outFile </> "graphs"
 
       createDirectoryIfMissing True gdir
-      installStaticFile gdir "OpenLayers.js"
-      installStaticFile gdir "jquery-1.7.1.js"
-      installStaticFile gdir "showGraph.js"
-      installStaticFile gdir "graph.css"
+      let jsAndCss = [ "OpenLayers.js"
+                     , "jquery-1.7.1.js"
+                     , "showGraph.js"
+                     , "graph.css"
+                     ]
+      mapM_ (installStaticFile gdir) jsAndCss
+      installStaticSubdir "img" gdir
 
       caps <- getNumCapabilities
       let actions = map (makeFunctionPage toGraph gdir) gs
@@ -121,6 +125,19 @@ installStaticFile :: FilePath -> FilePath -> IO ()
 installStaticFile dir name = do
   file <- getDataFileName ("share" </> name)
   copyFile file (dir </> name)
+
+-- | Install all of the files in the given subdir of the datadir to a
+-- destdir.  The subdir is created (this is basically cp -R).
+installStaticSubdir :: FilePath -> FilePath -> IO ()
+installStaticSubdir sdir destdir = do
+  dd <- getDataDir
+  let patt = dd </> "share" </> sdir </> "*"
+  files <- namesMatching patt
+  let namesAndDests = map addDest files
+  createDirectoryIfMissing True (destdir </> sdir)
+  mapM_ (uncurry copyFile) namesAndDests
+  where
+    addDest f = (f, destdir </> sdir </> takeFileName f)
 
 makeFunctionPage :: (PrintDotRepr dg n)
                     => (a -> dg n)
