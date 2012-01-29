@@ -145,7 +145,6 @@ makeFunctionPage :: (PrintDotRepr dg n)
                     -> (FilePath, a)
                     -> IO ()
 makeFunctionPage toGraph gdir (fname, g) = do
-  putStrLn fname
   let svgname = gdir </> gfilename
       dg = toGraph g
   -- Use the more general graphvizWithHandle so that we can read the
