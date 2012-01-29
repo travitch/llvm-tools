@@ -86,13 +86,16 @@ visualizeGraph optOptions fromModule toGraph  = do
       -- wrapper page (with an index page).  The html page should be simple
       -- and just embed the SVG and load svgpan (and maybe jquery)
       let Just outFile = outputFile opts
+          gdir = outFile </> "graphs"
 
-      createDirectoryIfMissing True (outFile </> "graphs")
-      jsFile <- getDataFileName "share/svgpan.js"
-      copyFile jsFile (outFile </> "graphs" </> "svgpan.js")
+      createDirectoryIfMissing True gdir
+      installStaticFile gdir "OpenLayers.js"
+      installStaticFile gdir "jquery-1.7.1.js"
+      installStaticFile gdir "showGraph.js"
+      installStaticFile gdir "graph.css"
 
       caps <- getNumCapabilities
-      let actions = map (makeFunctionPage toGraph outFile) gs
+      let actions = map (makeFunctionPage toGraph gdir) gs
       withPool caps $ \capPool -> parallel_ capPool actions
       writeHtmlIndex outFile (map fst gs)
 
@@ -112,14 +115,19 @@ visualizeGraph optOptions fromModule toGraph  = do
           createDirectoryIfMissing True outFile
           mapM_ (writeDotGraph toGraph outFile o) gs
 
+installStaticFile :: FilePath -> FilePath -> IO ()
+installStaticFile dir name = do
+  file <- getDataFileName ("share" </> name)
+  copyFile file (dir </> name)
+
 makeFunctionPage :: (PrintDotRepr dg n)
                     => (a -> dg n)
                     -> FilePath
                     -> (FilePath, a)
                     -> IO ()
-makeFunctionPage toGraph dirname (fname, g) = do
-  _ <- runGraphviz (toGraph g) Svg (dirname </> "graphs" </> gfilename)
-  writeHtmlWrapper (dirname </> "graphs") hfilename gfilename fname
+makeFunctionPage toGraph gdir (fname, g) = do
+  _ <- runGraphviz (toGraph g) Svg (gdir </> gfilename)
+  writeHtmlWrapper gdir hfilename gfilename fname
   where
     gfilename = fname <.> "svg"
     hfilename = fname <.> "html"

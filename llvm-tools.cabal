@@ -9,7 +9,10 @@ category: Development
 build-type: Simple
 cabal-version: >=1.10
 
-data-files: share/svgpan.js
+data-files: share/jquery-1.7.1.js
+            share/OpenLayers.js
+            share/showGraph.js
+            share/*.css
 
 -- A longer description of the package.
 -- Description:
