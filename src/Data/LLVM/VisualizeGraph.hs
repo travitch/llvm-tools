@@ -2,6 +2,7 @@ module Data.LLVM.VisualizeGraph ( visualizeGraph ) where
 
 import GHC.Conc ( getNumCapabilities )
 
+import Control.Arrow
 import Control.Concurrent.ParallelIO.Local
 import Control.Monad ( when )
 import qualified Data.ByteString as BS
@@ -133,11 +134,10 @@ installStaticSubdir sdir destdir = do
   dd <- getDataDir
   let patt = dd </> "share" </> sdir </> "*"
   files <- namesMatching patt
-  let namesAndDests = map addDest files
+  let toDest f = destdir </> sdir </> takeFileName f
+  let namesAndDests = map (id &&& toDest) files
   createDirectoryIfMissing True (destdir </> sdir)
   mapM_ (uncurry copyFile) namesAndDests
-  where
-    addDest f = (f, destdir </> sdir </> takeFileName f)
 
 makeFunctionPage :: (PrintDotRepr dg n)
                     => (a -> dg n)
@@ -145,6 +145,7 @@ makeFunctionPage :: (PrintDotRepr dg n)
                     -> (FilePath, a)
                     -> IO ()
 makeFunctionPage toGraph gdir (fname, g) = do
+  putStrLn fname
   let svgname = gdir </> gfilename
       dg = toGraph g
   -- Use the more general graphvizWithHandle so that we can read the
