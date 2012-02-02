@@ -1,4 +1,7 @@
-module Data.LLVM.VisualizeGraph ( visualizeGraph ) where
+module Data.LLVM.VisualizeGraph (
+  OutputType(..),
+  visualizeGraph
+  ) where
 
 import GHC.Conc ( getNumCapabilities )
 
@@ -9,10 +12,7 @@ import qualified Data.ByteString as BS
 import Data.GraphViz
 import Data.Maybe ( isNothing )
 
-import System.Console.CmdArgs.Explicit
-import System.Console.CmdArgs.Text
 import System.Directory
-import System.Exit
 import System.FilePath
 import System.FilePath.Glob
 
@@ -25,72 +25,36 @@ import Data.LLVM.Parse ( defaultParserOptions, parseLLVMFile )
 import Data.LLVM.HtmlWrapper
 import Data.LLVM.SvgInspection
 
-data Opts = Opts { inputFile :: Maybe FilePath
-                 , outputFile :: Maybe FilePath
-                 , outputFormat :: OutputType
-                 , wantsHelp :: Bool
-                 }
-
 data OutputType = CanvasOutput GraphvizCanvas
                 | FileOutput GraphvizOutput
                 | HtmlOutput
                 deriving (Show)
 
-cmdOpts :: Opts -> Mode Opts
-cmdOpts defs = mode "VisualizeGraph" defs desc infileArg as
-  where
-    infileArg = flagArg setInput "INPUT"
-    desc = "A generic graph viewing frontend"
-    as = [ flagReq ["output", "o"] setOutput "[FILE or DIR]" "The destination of a file output"
-         , flagReq ["format", "f"] setFormat "GVOUT" "The type of output to produce: Gtk, Xlib, XDot, Eps, Jpeg, Pdf, Png, Ps, Ps2, Svg.  Default: Gtk"
-         , flagHelpSimple setHelp
-         ]
-
-defaultOptions :: Opts
-defaultOptions = Opts { inputFile = Nothing
-                      , outputFile = Nothing
-                      , outputFormat = CanvasOutput Gtk
-                      , wantsHelp = False
-                      }
-
-showHelpAndExit :: Mode a -> IO b -> IO b
-showHelpAndExit args exitCmd = do
-  putStrLn $ showText (Wrap 80) $ helpText [] HelpFormatOne args
-  exitCmd
 
 -- | Visualize a graph-based analysis with graphviz.  It handles many
 -- common options including both file and canvas output.
 visualizeGraph :: (PrintDotRepr dg n)
-                  => [String] -- ^ Module optimization flags
+                  => FilePath -- ^ Input file name
+                  -> Maybe FilePath -- ^ Output file name
+                  -> OutputType -- ^ Type of output requested
+                  -> [String] -- ^ Module optimization flags
                   -> (Module -> [(String, a)]) -- ^ A function to turn a Module into some graphs
                   -> (a -> dg n) -- ^ A function to turn each graph into a GraphViz DotGraph
                   -> IO ()
-visualizeGraph optOptions fromModule toGraph  = do
-  let arguments = cmdOpts defaultOptions
-  opts <- processArgs arguments
-
-  when (wantsHelp opts) (showHelpAndExit arguments exitSuccess)
-  when (isNothing (inputFile opts)) $ do
-    putStrLn "Input file missing"
-    exitFailure
-
-  let Just infile = inputFile opts
-
+visualizeGraph inFile outFile fmt optOptions fromModule toGraph  = do
   let p = parseLLVMFile defaultParserOptions
-  m <- buildModule optOptions p infile
+  m <- buildModule optOptions p inFile
   let gs = fromModule m
 
-  case outputFormat opts of
+  case fmt of
     HtmlOutput -> do
-      when (isNothing (outputFile opts)) $ do
-        putStrLn "Output directory not specified"
-        exitFailure
+      when (isNothing outFile) $ ioError $ userError "Output directory not specified"
       -- Make a directory for all of the output and render each graph
       -- with graphviz to svg format.  For each svg, create an html
       -- wrapper page (with an index page).  The html page should be simple
       -- and just embed the SVG and load svgpan (and maybe jquery)
-      let Just outFile = outputFile opts
-          gdir = outFile </> "graphs"
+      let Just outFile' = outFile
+          gdir = outFile' </> "graphs"
 
       createDirectoryIfMissing True gdir
       let jsAndCss = [ "OpenLayers.js"
@@ -104,23 +68,21 @@ visualizeGraph optOptions fromModule toGraph  = do
       caps <- getNumCapabilities
       let actions = map (makeFunctionPage toGraph gdir) gs
       withPool caps $ \capPool -> parallel_ capPool actions
-      writeHtmlIndex outFile (map fst gs)
+      writeHtmlIndex outFile' (map fst gs)
 
     -- If we are showing canvases, ignore function names
     CanvasOutput o -> mapM_ (\(_,g) -> runGraphvizCanvas' (toGraph g) o) gs
 
     FileOutput o -> do
-      when (isNothing (outputFile opts)) $ do
-        putStrLn "Output file not specified"
-        exitFailure
-      let Just outFile = outputFile opts
+      when (isNothing outFile) $ ioError $ userError "Output file not specified"
+      let Just outFile' = outFile
       case gs of
-        [(_, g)] -> runGraphviz (toGraph g) o outFile >> return ()
+        [(_, g)] -> runGraphviz (toGraph g) o outFile' >> return ()
         _ -> do
           -- If we have more than one function, put all of them in
           -- the given directory
-          createDirectoryIfMissing True outFile
-          mapM_ (writeDotGraph toGraph outFile o) gs
+          createDirectoryIfMissing True outFile'
+          mapM_ (writeDotGraph toGraph outFile' o) gs
 
 installStaticFile :: FilePath -> FilePath -> IO ()
 installStaticFile dir name = do
@@ -187,29 +149,3 @@ toExt o =
     Ps2 -> "ps"
     Svg -> "svg"
     _ -> error $ "Unsupported format: " ++ show o
-
--- Command line helpers
-
-setHelp :: Opts -> Opts
-setHelp opts = opts { wantsHelp = True }
-
-setInput :: String -> Opts -> Either String Opts
-setInput inf opts@Opts { inputFile = Nothing } =
-  Right opts { inputFile = Just inf }
-setInput _ _ = Left "Only one input file is allowed"
-
-setOutput :: String -> Opts -> Either String Opts
-setOutput outf opts@Opts { outputFile = Nothing } =
-  Right opts { outputFile = Just outf }
-setOutput _ _ = Left "Only one output file is allowed"
-
-setFormat :: String -> Opts -> Either String Opts
-setFormat fmt opts =
-  case fmt of
-    "Html" -> Right opts { outputFormat = HtmlOutput }
-    _ -> case reads fmt of
-      [(Gtk, [])] -> Right opts { outputFormat = CanvasOutput Gtk }
-      [(Xlib, [])] -> Right opts { outputFormat = CanvasOutput Xlib }
-      _ -> case reads fmt of
-        [(gout, [])] -> Right opts { outputFormat = FileOutput gout }
-        _ -> Left ("Unrecognized output format: " ++ fmt)
