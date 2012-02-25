@@ -2,6 +2,7 @@ module Main ( main ) where
 
 import Control.Arrow
 import Control.Monad ( when )
+import Control.Monad.Identity
 import Data.ByteString.Char8 ( unpack )
 import Data.GraphViz
 import Data.Maybe ( isNothing )
@@ -16,6 +17,7 @@ import Data.LLVM.Analysis.CFG
 import Data.LLVM.Analysis.CDG
 import Data.LLVM.Analysis.CallGraph
 import Data.LLVM.Analysis.Dominance
+import Data.LLVM.Analysis.Escape
 import Data.LLVM.Analysis.PointsTo.TrivialFunction
 
 data Opts = Opts { inputFile :: Maybe FilePath
@@ -30,6 +32,7 @@ data GraphType = Cfg
                | Cg
                | Domtree
                | Postdomtree
+               | Escape
                deriving (Read, Show, Eq, Ord)
 
 cmdOpts :: Opts -> Mode Opts
@@ -38,7 +41,7 @@ cmdOpts defs = mode "VisualizeGraph" defs desc infileArg as
     infileArg = flagArg setInput "INPUT"
     desc = "A generic graph viewing frontend"
     as = [ flagReq ["output", "o"] setOutput "[FILE or DIR]" "The destination of a file output"
-         , flagReq ["type", "t"] setType "[GRAPHTYPE]" "The graph requested.  One of Cfg, Cdg, Cg, Domtree, Postdomtree"
+         , flagReq ["type", "t"] setType "[GRAPHTYPE]" "The graph requested.  One of Cfg, Cdg, Cg, Domtree, Postdomtree, Escape"
          , flagReq ["format", "f"] setFormat "GVOUT" "The type of output to produce: Gtk, Xlib, XDot, Eps, Jpeg, Pdf, Png, Ps, Ps2, Svg.  Default: Gtk"
          , flagHelpSimple setHelp
          ]
@@ -80,6 +83,7 @@ main = do
     Cg -> visualizeGraph inFile outFile fmt optOptions mkCG cgGraphvizRepr
     Domtree -> visualizeGraph inFile outFile fmt optOptions mkDTs domTreeGraphvizRepr
     Postdomtree -> visualizeGraph inFile outFile fmt optOptions mkPDTs postdomTreeGraphvizRepr
+    Escape -> visualizeGraph inFile outFile fmt optOptions mkEscapeGraphs useGraphvizRepr
   where
     optOptions = [ "-mem2reg", "-basicaa" ]
 
@@ -110,6 +114,13 @@ mkCDGs m = map (getFuncName &&& toCDG) fs
   where
     fs = moduleDefinedFunctions m
     toCDG = controlDependenceGraph . mkCFG
+
+--mkEscapeGraphs :: Module -> [(String,
+mkEscapeGraphs m = escapeUseGraphs er
+  where
+    er = runIdentity $ escapeAnalysis cg (\_ _ -> return True)
+    cg = mkCallGraph m pta []
+    pta = runPointsToAnalysis m
 
 getFuncName :: Function -> String
 getFuncName = unpack . identifierContent . functionName
