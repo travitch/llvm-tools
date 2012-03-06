@@ -1,24 +1,25 @@
 module Main ( main ) where
 
 import Control.Arrow
-import Control.Monad ( when )
 import Control.Monad.Identity
 import Data.ByteString.Char8 ( unpack )
 import Data.GraphViz
 import Data.Maybe ( isNothing )
+import Data.Monoid
 import System.Console.CmdArgs.Explicit
 import System.Console.CmdArgs.Text
 import System.Exit
 
-import Data.LLVM.VisualizeGraph
+import LLVM.VisualizeGraph
 
-import Data.LLVM
-import Data.LLVM.Analysis.CFG
-import Data.LLVM.Analysis.CDG
-import Data.LLVM.Analysis.CallGraph
-import Data.LLVM.Analysis.Dominance
-import Data.LLVM.Analysis.Escape
-import Data.LLVM.Analysis.PointsTo.TrivialFunction
+import LLVM.Analysis
+import LLVM.Analysis.CFG
+import LLVM.Analysis.CDG
+import LLVM.Analysis.CallGraph
+import LLVM.Analysis.CallGraphSCCTraversal
+import LLVM.Analysis.Dominance
+import LLVM.Analysis.Escape
+import LLVM.Analysis.PointsTo.TrivialFunction
 
 data Opts = Opts { inputFile :: Maybe FilePath
                  , outputFile :: Maybe FilePath
@@ -115,10 +116,18 @@ mkCDGs m = map (getFuncName &&& toCDG) fs
     fs = moduleDefinedFunctions m
     toCDG = controlDependenceGraph . mkCFG
 
+runEscapeAnalysis ::  CallGraph
+                     -> (ExternalFunction -> Int -> Identity Bool)
+                     -> EscapeResult
+runEscapeAnalysis cg extSumm =
+  let analysis :: [Function] -> EscapeResult -> EscapeResult
+      analysis = callGraphAnalysisM runIdentity (escapeAnalysis extSumm)
+  in callGraphSCCTraversal cg analysis mempty
+
 --mkEscapeGraphs :: Module -> [(String,
 mkEscapeGraphs m = escapeUseGraphs er
   where
-    er = runIdentity $ escapeAnalysis cg (\_ _ -> return True)
+    er = runEscapeAnalysis cg (\_ _ -> return True)
     cg = mkCallGraph m pta []
     pta = runPointsToAnalysis m
 

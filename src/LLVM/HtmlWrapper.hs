@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Data.LLVM.HtmlWrapper ( writeHtmlIndex, writeHtmlWrapper ) where
+module LLVM.HtmlWrapper ( writeHtmlIndex, writeHtmlWrapper ) where
 
 import Control.Monad ( forM_ )
 import qualified Data.ByteString.Lazy as LBS

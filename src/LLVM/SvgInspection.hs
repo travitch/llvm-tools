@@ -1,4 +1,4 @@
-module Data.LLVM.SvgInspection ( getSvgSize ) where
+module LLVM.SvgInspection ( getSvgSize ) where
 
 import Data.ByteString ( ByteString )
 import Text.XML.Light

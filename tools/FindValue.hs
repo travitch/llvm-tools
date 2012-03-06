@@ -10,8 +10,8 @@ import qualified Data.HashSet as HS
 import System.Environment ( getArgs )
 import Text.Printf
 
-import Data.LLVM
-import Data.LLVM.Parse
+import LLVM.Analysis
+import LLVM.Parse
 
 main :: IO ()
 main = do

@@ -1,4 +1,4 @@
-module Data.LLVM.VisualizeGraph (
+module LLVM.VisualizeGraph (
   OutputType(..),
   visualizeGraph
   ) where
@@ -18,12 +18,12 @@ import System.FilePath.Glob
 
 import Paths_llvm_tools
 
-import Data.LLVM
-import Data.LLVM.Testing ( buildModule )
-import Data.LLVM.Parse ( defaultParserOptions, parseLLVMFile )
+import LLVM.Analysis
+import LLVM.Analysis.Util.Testing ( buildModule )
+import LLVM.Parse ( defaultParserOptions, parseLLVMFile )
 
-import Data.LLVM.HtmlWrapper
-import Data.LLVM.SvgInspection
+import LLVM.HtmlWrapper
+import LLVM.SvgInspection
 
 data OutputType = CanvasOutput GraphvizCanvas
                 | FileOutput GraphvizOutput
