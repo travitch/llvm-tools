@@ -8,23 +8,18 @@ maintainer: travitch@cs.wisc.edu
 category: Development
 build-type: Simple
 cabal-version: >=1.10
-
+extra-source-files: README.md
 data-files: share/jquery-1.7.1.js
             share/OpenLayers.js
             share/showGraph.js
             share/*.css
             share/img/*.png
+description: This package includes some tools to visualize the LLVM IR.
+             Current visualizations include static call graphs, CFGs, CDGs,
+             dominator trees, and some simple escape graphs.  Output formats
+             include most graphviz-supported formats, along with an
+             HTML-based format.
 
--- A longer description of the package.
--- Description:
-
--- A copyright notice.
--- Copyright:
-
-
--- Extra files to be distributed with the package, such as examples or
--- a README.
--- Extra-source-files:
 
 library
   default-language: Haskell2010
