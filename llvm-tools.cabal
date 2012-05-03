@@ -24,7 +24,7 @@ description: This package includes some tools to visualize the LLVM IR.
 library
   default-language: Haskell2010
   build-depends: base > 3 && < 5, bytestring, directory, filepath,
-                 blaze-html, graphviz, parallel-io,
+                 blaze-html >= 0.5, graphviz, parallel-io, blaze-markup,
                  xml, filemanip >= 0.3.5.2,
                  llvm-analysis, llvm-data-interop
   hs-source-dirs: src

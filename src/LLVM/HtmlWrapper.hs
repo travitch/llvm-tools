@@ -8,7 +8,7 @@ import System.FilePath
 import Text.Blaze.Html5
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
-import Text.Blaze.Renderer.Utf8 ( renderHtml )
+import Text.Blaze.Html.Renderer.Utf8 ( renderHtml )
 
 writeHtmlWrapper :: FilePath -> FilePath -> FilePath -> String -> Double -> Double -> IO ()
 writeHtmlWrapper dirname hfilename gfilename fname w h = do
@@ -25,7 +25,7 @@ htmlWrapper fname gfilename w h = H.docTypeHtml $ do
     H.link ! A.href "graph.css" ! A.rel "stylesheet" ! A.type_ "text/css"
   H.body $ do
     H.div ! A.id "map" $ return ()
-    H.script ! A.type_ "text/javascript" $ H.preEscapedString (loadScript gfilename w h)
+    H.script ! A.type_ "text/javascript" $ H.preEscapedToMarkup (loadScript gfilename w h)
 
 loadScript :: String -> Double -> Double -> String
 loadScript n w h = mconcat [ "$(window).bind('load', function () {"
