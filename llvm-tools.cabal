@@ -20,7 +20,6 @@ description: This package includes some tools to visualize the LLVM IR.
              include most graphviz-supported formats, along with an
              HTML-based format.
 
-
 library
   default-language: Haskell2010
   build-depends: base > 3 && < 5, bytestring, directory, filepath,
@@ -49,6 +48,15 @@ executable ViewIRGraph
   build-depends: base > 3 && < 5, containers, bytestring, cmdargs >= 0.9, mtl,
                  graphviz, llvm-analysis, llvm-tools
   main-is: ViewIRGraph.hs
+  hs-source-dirs: tools
+  ghc-options: -Wall -rtsopts -threaded
+  ghc-prof-options: -auto-all
+
+executable TypeUnificationCheck
+  default-language: Haskell2010
+  build-depends: base > 3 && < 5, process, regex-tdfa,
+                 llvm-analysis, llvm-data-interop
+  main-is: TypeUnificationCheck.hs
   hs-source-dirs: tools
   ghc-options: -Wall -rtsopts -threaded
   ghc-prof-options: -auto-all
