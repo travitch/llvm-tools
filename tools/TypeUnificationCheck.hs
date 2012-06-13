@@ -1,35 +1,62 @@
+-- | Take a single bitcode file and pump it through opt -S and parse
+-- out the named type definitions (structs, unions, and classes).
+-- Sort them and print them.
+--
+-- Then use llvm-data-interop to parse the bitcode and print its
+-- sorted type list.  It will be apparent if types were properly
+-- unified or not.
 module Main ( main ) where
 
 import Control.Monad ( forM_ )
+import Data.Attoparsec.ByteString.Char8
+import Data.Conduit
+import Data.Conduit.Attoparsec
+import Data.Conduit.Process as P
 import Data.List ( sort )
+import Data.Monoid
+import Data.ByteString.Char8 ( ByteString )
+import qualified Data.ByteString.Char8 as BS
 import System.Environment ( getArgs )
-import System.Process
 import Text.Printf
-import Text.Regex.TDFA
 
 import LLVM.Analysis
 import LLVM.Analysis.Util.Environment
 import LLVM.Parse
 
--- Take a single bitcode file and pump it through opt -S; use
--- regex-tdfa to grep out the type specifications.  Sort them and
--- print them.
---
--- Then use llvm-data-interop to parse the bitcode and print its
--- sorted type list.
+llvmTypesParser :: Parser [ByteString]
+llvmTypesParser = do
+  skipWhile (/='%')
+  res <- many1 typeLineParser
+  skipWhile (const True)
+  return res
+
+typePrefix :: Parser ByteString
+typePrefix = choice [ string (BS.pack "%struct")
+                    , string (BS.pack "%union")
+                    , string (BS.pack "%class")
+                    ]
+
+typeLineParser :: Parser ByteString
+typeLineParser = do
+  pfx <- typePrefix
+  suffix <- takeTill (=='\n')
+  endOfLine
+  return $ pfx `mappend` suffix
 
 main :: IO ()
 main = do
   [bcfile] <- getArgs
 
-  -- First, get the output of opt
+  -- First, get the output of opt.  This uses process-conduit and
+  -- attoparsec-conduit to parse the output of opt in constant space.
   optBin <- findOpt
-  ll <- readProcess optBin ["-S", bcfile] ""
+  typeLines <- runResourceT $ do
+    sourceProcess (P.proc optBin ["-S", bcfile]) $$ sinkParser llvmTypesParser
 
-  let typeDefs = sort $ filter isTypeDef $ lines ll
+  let typeDefs = sort typeLines
 
   _ <- printf "opt types: %d\n" (length typeDefs)
-  forM_ typeDefs $ \td -> putStrLn ("  " ++ td)
+  forM_ typeDefs $ \td -> BS.putStrLn (BS.pack "  " `mappend` td)
 
   Right m <- parseLLVMFile defaultParserOptions bcfile
   let ts = sort $ map show $ filter isStructType (moduleRetainedTypes m)
@@ -41,6 +68,3 @@ isStructType t =
   case t of
     TypeStruct (Just _) _ _ -> True
     _ -> False
-
-isTypeDef :: String -> Bool
-isTypeDef s = s =~ "^%struct\\."

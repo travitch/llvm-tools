@@ -54,7 +54,8 @@ executable ViewIRGraph
 
 executable TypeUnificationCheck
   default-language: Haskell2010
-  build-depends: base > 3 && < 5, process, regex-tdfa,
+  build-depends: base > 3 && < 5, bytestring, attoparsec,
+                 process-conduit, attoparsec-conduit, conduit,
                  llvm-analysis, llvm-data-interop
   main-is: TypeUnificationCheck.hs
   hs-source-dirs: tools
