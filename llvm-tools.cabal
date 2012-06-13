@@ -34,6 +34,13 @@ library
   ghc-options: -Wall
   ghc-prof-options: -auto-all
 
+executable DumpLLVMModule
+  default-language: Haskell2010
+  build-depends: base > 3 && < 5, llvm-analysis, llvm-data-interop
+  main-is: DumpLLVMModule.hs
+  hs-source-dirs: tools
+  ghc-options: -Wall -rtsopts
+
 executable FindValue
   default-language: Haskell2010
   build-depends: base > 3 && < 5, unordered-containers,
