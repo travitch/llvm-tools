@@ -2,7 +2,6 @@ module Main ( main ) where
 
 import Control.Arrow
 import Control.Monad.Identity
-import Data.ByteString.Char8 ( unpack )
 import Data.GraphViz
 import Data.Maybe ( isNothing )
 import Data.Monoid
@@ -132,7 +131,7 @@ mkEscapeGraphs m = escapeUseGraphs er
     pta = runPointsToAnalysis m
 
 getFuncName :: Function -> String
-getFuncName = unpack . identifierContent . functionName
+getFuncName = identifierAsString . functionName
 
 
 

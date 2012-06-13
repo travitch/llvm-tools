@@ -36,7 +36,7 @@ library
 
 executable DumpLLVMModule
   default-language: Haskell2010
-  build-depends: base > 3 && < 5, llvm-analysis, llvm-data-interop
+  build-depends: base > 3 && < 5, llvm-data-interop
   main-is: DumpLLVMModule.hs
   hs-source-dirs: tools
   ghc-options: -Wall -rtsopts
@@ -52,7 +52,7 @@ executable FindValue
 
 executable ViewIRGraph
   default-language: Haskell2010
-  build-depends: base > 3 && < 5, containers, bytestring, cmdargs >= 0.9, mtl,
+  build-depends: base > 3 && < 5, containers, cmdargs >= 0.9, mtl,
                  graphviz, llvm-analysis, llvm-tools
   main-is: ViewIRGraph.hs
   hs-source-dirs: tools
