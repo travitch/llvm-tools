@@ -52,7 +52,7 @@ executable FindValue
 
 executable ViewIRGraph
   default-language: Haskell2010
-  build-depends: base > 3 && < 5, containers, cmdargs >= 0.9, mtl,
+  build-depends: base > 3 && < 5, containers, optparse-applicative, mtl,
                  graphviz, llvm-analysis, llvm-tools
   main-is: ViewIRGraph.hs
   hs-source-dirs: tools

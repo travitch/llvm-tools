@@ -1,13 +1,11 @@
 module Main ( main ) where
 
 import Control.Arrow
+import Control.Applicative
 import Control.Monad.Identity
 import Data.GraphViz
-import Data.Maybe ( isNothing )
 import Data.Monoid
-import System.Console.CmdArgs.Explicit
-import System.Console.CmdArgs.Text
-import System.Exit
+import Options.Applicative
 
 import LLVM.VisualizeGraph
 
@@ -20,12 +18,34 @@ import LLVM.Analysis.Dominance
 import LLVM.Analysis.Escape
 import LLVM.Analysis.PointsTo.TrivialFunction
 
-data Opts = Opts { inputFile :: Maybe FilePath
-                 , outputFile :: Maybe FilePath
-                 , graphType :: Maybe GraphType
+data Opts = Opts { outputFile :: Maybe FilePath
+                 , graphType :: GraphType
                  , outputFormat :: OutputType
-                 , wantsHelp :: Bool
+                 , inputFile :: FilePath
                  }
+
+cmdOpts :: Parser Opts
+cmdOpts = Opts
+ <$> option
+     ( long "output"
+     & short 'o'
+     & metavar "FILE/DIR"
+     & help "The destination of a file output"
+     & value Nothing
+     & reader (Just . auto))
+  <*> option
+      ( long "type"
+      & short 't'
+      & metavar "TYPE"
+      & help "The graph requested.  One of Cfg, Cdg, Cg, Domtree, Postdomtree, Escape")
+  <*> nullOption
+      ( long "format"
+      & short 'f'
+      & metavar "FORMAT"
+      & reader parseOutputType
+      & help "The type of output to produce: Gtk, Xlib, XDot, Eps, Jpeg, Pdf, Png, Ps, Ps2, Svg.  Default: Gtk"
+      & value (CanvasOutput Gtk))
+  <*> argument str ( metavar "FILE" )
 
 data GraphType = Cfg
                | Cdg
@@ -35,45 +55,18 @@ data GraphType = Cfg
                | Escape
                deriving (Read, Show, Eq, Ord)
 
-cmdOpts :: Opts -> Mode Opts
-cmdOpts defs = mode "VisualizeGraph" defs desc infileArg as
-  where
-    infileArg = flagArg setInput "INPUT"
-    desc = "A generic graph viewing frontend"
-    as = [ flagReq ["output", "o"] setOutput "[FILE or DIR]" "The destination of a file output"
-         , flagReq ["type", "t"] setType "[GRAPHTYPE]" "The graph requested.  One of Cfg, Cdg, Cg, Domtree, Postdomtree, Escape"
-         , flagReq ["format", "f"] setFormat "GVOUT" "The type of output to produce: Gtk, Xlib, XDot, Eps, Jpeg, Pdf, Png, Ps, Ps2, Svg.  Default: Gtk"
-         , flagHelpSimple setHelp
-         ]
-
-defaultOptions :: Opts
-defaultOptions = Opts { inputFile = Nothing
-                      , outputFile = Nothing
-                      , graphType = Nothing
-                      , outputFormat = CanvasOutput Gtk
-                      , wantsHelp = False
-                      }
-
-showHelpAndExit :: Mode a -> IO b -> IO b
-showHelpAndExit args exitCmd = do
-  putStrLn $ showText (Wrap 80) $ helpText [] HelpFormatOne args
-  exitCmd
-
-
 main :: IO ()
-main = do
-  let arguments = cmdOpts defaultOptions
-  opts <- processArgs arguments
-  when (wantsHelp opts) (showHelpAndExit arguments exitSuccess)
-  when (isNothing (inputFile opts)) $ do
-    putStrLn "Input file not specified"
-    showHelpAndExit arguments exitFailure
-  when (isNothing (graphType opts)) $ do
-    putStrLn "No graph type specified"
-    showHelpAndExit arguments exitFailure
+main = execParser args >>= realMain
+  where
+    args = info (helper <*> cmdOpts)
+      ( fullDesc
+      & progDesc "Generate the specified graph TYPE for FILE"
+      & header "ViewIRGraph - View different graphs for LLVM IR modules in a variety of formats")
 
-  let Just gt = graphType opts
-      Just inFile = inputFile opts
+realMain :: Opts -> IO ()
+realMain opts = do
+  let gt = graphType opts
+      inFile = inputFile opts
       outFile = outputFile opts
       fmt = outputFormat opts
 
@@ -137,32 +130,14 @@ getFuncName = identifierAsString . functionName
 
 -- Command line helpers
 
-setHelp :: Opts -> Opts
-setHelp opts = opts { wantsHelp = True }
 
-setInput :: String -> Opts -> Either String Opts
-setInput inf opts@Opts { inputFile = Nothing } =
-  Right opts { inputFile = Just inf }
-setInput _ _ = Left "Only one input file is allowed"
-
-setOutput :: String -> Opts -> Either String Opts
-setOutput outf opts@Opts { outputFile = Nothing } =
-  Right opts { outputFile = Just outf }
-setOutput _ _ = Left "Only one output file is allowed"
-
-setFormat :: String -> Opts -> Either String Opts
-setFormat fmt opts =
+parseOutputType :: String -> Maybe OutputType
+parseOutputType fmt =
   case fmt of
-    "Html" -> Right opts { outputFormat = HtmlOutput }
+    "Html" -> Just HtmlOutput
     _ -> case reads fmt of
-      [(Gtk, [])] -> Right opts { outputFormat = CanvasOutput Gtk }
-      [(Xlib, [])] -> Right opts { outputFormat = CanvasOutput Xlib }
+      [(Gtk, [])] -> Just $ CanvasOutput Gtk
+      [(Xlib, [])] -> Just $ CanvasOutput Xlib
       _ -> case reads fmt of
-        [(gout, [])] -> Right opts { outputFormat = FileOutput gout }
-        _ -> Left ("Unrecognized output format: " ++ fmt)
-
-setType :: String -> Opts -> Either String Opts
-setType t opts =
-  case reads t of
-    [(t', [])] -> Right opts { graphType = Just t' }
-    _ -> Left $ "Unsupported graph type: " ++ t
+        [(gout, [])] -> Just $ FileOutput gout
+        _ -> Nothing
