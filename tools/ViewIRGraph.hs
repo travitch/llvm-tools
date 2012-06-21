@@ -32,7 +32,7 @@ cmdOpts = Opts
      & metavar "FILE/DIR"
      & help "The destination of a file output"
      & value Nothing
-     & reader (Just . auto))
+     & reader (Just . str))
   <*> option
       ( long "type"
       & short 't'
