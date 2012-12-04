@@ -15,7 +15,6 @@ import LLVM.Analysis.CDG
 import LLVM.Analysis.CallGraph
 import LLVM.Analysis.CallGraphSCCTraversal
 import LLVM.Analysis.Dominance
-import LLVM.Analysis.Escape
 import LLVM.Analysis.PointsTo.TrivialFunction
 
 data Opts = Opts { outputFile :: Maybe FilePath
@@ -37,13 +36,13 @@ cmdOpts = Opts
       ( long "type"
       & short 't'
       & metavar "TYPE"
-      & help "The graph requested.  One of Cfg, Cdg, Cg, Domtree, Postdomtree, Escape")
+      & help "The graph requested.  One of Cfg, Cdg, Cg, Domtree, Postdomtree")
   <*> nullOption
       ( long "format"
       & short 'f'
       & metavar "FORMAT"
       & reader parseOutputType
-      & help "The type of output to produce: Gtk, Xlib, XDot, Eps, Jpeg, Pdf, Png, Ps, Ps2, Svg.  Default: Gtk"
+      & help "The type of output to produce: Gtk, Xlib, Html, Canon, XDot, Eps, Jpeg, Pdf, Png, Ps, Ps2, Svg.  Default: Gtk"
       & value (CanvasOutput Gtk))
   <*> argument str ( metavar "FILE" )
 
@@ -52,7 +51,6 @@ data GraphType = Cfg
                | Cg
                | Domtree
                | Postdomtree
-               | Escape
                deriving (Read, Show, Eq, Ord)
 
 main :: IO ()
@@ -76,7 +74,6 @@ realMain opts = do
     Cg -> visualizeGraph inFile outFile fmt optOptions mkCG cgGraphvizRepr
     Domtree -> visualizeGraph inFile outFile fmt optOptions mkDTs domTreeGraphvizRepr
     Postdomtree -> visualizeGraph inFile outFile fmt optOptions mkPDTs postdomTreeGraphvizRepr
-    Escape -> visualizeGraph inFile outFile fmt optOptions mkEscapeGraphs useGraphvizRepr
   where
     optOptions = [ "-mem2reg", "-basicaa" ]
 
@@ -107,21 +104,6 @@ mkCDGs m = map (getFuncName &&& toCDG) fs
   where
     fs = moduleDefinedFunctions m
     toCDG = controlDependenceGraph . mkCFG
-
-runEscapeAnalysis ::  CallGraph
-                     -> (ExternalFunction -> Int -> Identity Bool)
-                     -> EscapeResult
-runEscapeAnalysis cg extSumm =
-  let analysis :: [Function] -> EscapeResult -> EscapeResult
-      analysis = callGraphAnalysisM runIdentity (escapeAnalysis extSumm)
-  in callGraphSCCTraversal cg analysis mempty
-
---mkEscapeGraphs :: Module -> [(String,
-mkEscapeGraphs m = escapeUseGraphs er
-  where
-    er = runEscapeAnalysis cg (\_ _ -> return True)
-    cg = mkCallGraph m pta []
-    pta = runPointsToAnalysis m
 
 getFuncName :: Function -> String
 getFuncName = identifierAsString . functionName

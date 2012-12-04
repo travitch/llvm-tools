@@ -28,14 +28,14 @@ findNodes nodes m = filter ((`HS.member` nodes) . valueUniqueId) allVals
     allArgs = concatMap functionParameters fs
     allBlocks = concatMap functionBody fs
     allInsts = concatMap basicBlockInstructions allBlocks
-    allVals = concat [ map Value fs
-                     , map Value (moduleGlobalVariables m)
-                     , map Value (moduleExternalValues m)
-                     , map Value (moduleExternalFunctions m)
-                     , map Value (moduleAliases m)
-                     , map Value allBlocks
-                     , map Value allInsts
-                     , map Value allArgs
+    allVals = concat [ map toValue fs
+                     , map toValue (moduleGlobalVariables m)
+                     , map toValue (moduleExternalValues m)
+                     , map toValue (moduleExternalFunctions m)
+                     , map toValue (moduleAliases m)
+                     , map toValue allBlocks
+                     , map toValue allInsts
+                     , map toValue allArgs
                      ]
 
 showValue :: Value -> IO ()

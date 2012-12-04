@@ -139,6 +139,7 @@ writeDotGraph toGraph dirname o (funcName, g) =
 toExt :: GraphvizOutput -> String
 toExt o =
   case o of
+    Canon -> "dot"
     XDot -> "dot"
     Eps -> "eps"
     Fig -> "fig"

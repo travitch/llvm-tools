@@ -7,8 +7,8 @@ Options for the visualizer:
 
     -o --output=[FILE or DIR]  The destination of a file output
     -t --type=[GRAPHTYPE]      The graph requested.  One of Cfg, Cdg, Cg,
-                               Domtree, Postdomtree, Escape
-    -f --format=GVOUT          The type of output to produce: Gtk, Xlib, XDot,
+                               Domtree, Postdomtree
+    -f --format=GVOUT          The type of output to produce: Gtk, Xlib, Html, XDot,
                                Eps, Jpeg, Pdf, Png, Ps, Ps2, Svg.  Default: Gtk
     -? --help                  Display help message
 
