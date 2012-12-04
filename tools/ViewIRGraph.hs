@@ -43,7 +43,7 @@ cmdOpts = Opts
       & short 'f'
       & metavar "FORMAT"
       & reader parseOutputType
-      & help "The type of output to produce: Gtk, Xlib, XDot, Eps, Jpeg, Pdf, Png, Ps, Ps2, Svg.  Default: Gtk"
+      & help "The type of output to produce: Gtk, Xlib, Html, XDot, Eps, Jpeg, Pdf, Png, Ps, Ps2, Svg.  Default: Gtk"
       & value (CanvasOutput Gtk))
   <*> argument str ( metavar "FILE" )
 
