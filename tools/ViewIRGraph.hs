@@ -2,7 +2,6 @@ module Main ( main ) where
 
 import Control.Arrow
 import Control.Applicative
-import Control.Monad.Identity
 import Data.GraphViz
 import Data.Monoid
 import Options.Applicative
@@ -13,7 +12,6 @@ import LLVM.Analysis
 import LLVM.Analysis.CFG
 import LLVM.Analysis.CDG
 import LLVM.Analysis.CallGraph
-import LLVM.Analysis.CallGraphSCCTraversal
 import LLVM.Analysis.Dominance
 import LLVM.Analysis.PointsTo.TrivialFunction
 
@@ -25,25 +23,23 @@ data Opts = Opts { outputFile :: Maybe FilePath
 
 cmdOpts :: Parser Opts
 cmdOpts = Opts
- <$> option
+ <$> optional (option
      ( long "output"
-     & short 'o'
-     & metavar "FILE/DIR"
-     & help "The destination of a file output"
-     & value Nothing
-     & reader (Just . str))
+     <> short 'o'
+     <> metavar "FILE/DIR"
+     <> help "The destination of a file output"))
   <*> option
       ( long "type"
-      & short 't'
-      & metavar "TYPE"
-      & help "The graph requested.  One of Cfg, Cdg, Cg, Domtree, Postdomtree")
+      <> short 't'
+      <> metavar "TYPE"
+      <> help "The graph requested.  One of Cfg, Cdg, Cg, Domtree, Postdomtree")
   <*> nullOption
       ( long "format"
-      & short 'f'
-      & metavar "FORMAT"
-      & reader parseOutputType
-      & help "The type of output to produce: Gtk, Xlib, Html, Canon, XDot, Eps, Jpeg, Pdf, Png, Ps, Ps2, Svg.  Default: Gtk"
-      & value (CanvasOutput Gtk))
+      <> short 'f'
+      <> metavar "FORMAT"
+      <> reader parseOutputType
+      <> help "The type of output to produce: Gtk, Xlib, Html, Canon, XDot, Eps, Jpeg, Pdf, Png, Ps, Ps2, Svg.  Default: Gtk"
+      <> value (CanvasOutput Gtk))
   <*> argument str ( metavar "FILE" )
 
 data GraphType = Cfg
@@ -58,8 +54,8 @@ main = execParser args >>= realMain
   where
     args = info (helper <*> cmdOpts)
       ( fullDesc
-      & progDesc "Generate the specified graph TYPE for FILE"
-      & header "ViewIRGraph - View different graphs for LLVM IR modules in a variety of formats")
+      <> progDesc "Generate the specified graph TYPE for FILE"
+      <> header "ViewIRGraph - View different graphs for LLVM IR modules in a variety of formats")
 
 realMain :: Opts -> IO ()
 realMain opts = do
@@ -113,13 +109,13 @@ getFuncName = identifierAsString . functionName
 -- Command line helpers
 
 
-parseOutputType :: String -> Maybe OutputType
+parseOutputType :: String -> Either ParseError OutputType
 parseOutputType fmt =
   case fmt of
-    "Html" -> Just HtmlOutput
+    "Html" -> Right HtmlOutput
     _ -> case reads fmt of
-      [(Gtk, [])] -> Just $ CanvasOutput Gtk
-      [(Xlib, [])] -> Just $ CanvasOutput Xlib
+      [(Gtk, [])] -> Right $ CanvasOutput Gtk
+      [(Xlib, [])] -> Right $ CanvasOutput Xlib
       _ -> case reads fmt of
-        [(gout, [])] -> Just $ FileOutput gout
-        _ -> Nothing
+        [(gout, [])] -> Right $ FileOutput gout
+        _ -> Left $ ErrorMsg "Invalid output type"
