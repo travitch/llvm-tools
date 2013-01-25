@@ -20,7 +20,7 @@ import System.Environment ( getArgs )
 import Text.Printf
 
 import LLVM.Analysis
-import LLVM.Analysis.Util.Environment
+-- import LLVM.Analysis.Util.Environment
 import LLVM.Parse
 
 llvmTypesParser :: Parser [ByteString]
@@ -49,9 +49,8 @@ main = do
 
   -- First, get the output of opt.  This uses process-conduit and
   -- attoparsec-conduit to parse the output of opt in constant space.
-  optBin <- findOpt
   typeLines <- runResourceT $ do
-    sourceProcess (P.proc optBin ["-S", bcfile]) $$ sinkParser llvmTypesParser
+    sourceProcess (P.proc "opt" ["-S", bcfile]) $$ sinkParser llvmTypesParser
 
   let typeDefs = sort typeLines
 
