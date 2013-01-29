@@ -44,7 +44,7 @@ visualizeGraph :: (PrintDotRepr dg n)
 visualizeGraph inFile outFile fmt optOptions fromModule toGraph  = do
   let p = parseLLVMFile defaultParserOptions
   m <- buildModule optOptions p inFile
-  let gs = either error fromModule m
+  let gs = fromModule m
 
   case fmt of
     HtmlOutput -> do

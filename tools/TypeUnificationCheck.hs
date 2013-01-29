@@ -57,7 +57,7 @@ main = do
   _ <- printf "opt types: %d\n" (length typeDefs)
   forM_ typeDefs $ \td -> BS.putStrLn (BS.pack "  " `mappend` td)
 
-  Right m <- parseLLVMFile defaultParserOptions bcfile
+  m <- parseLLVMFile defaultParserOptions bcfile
   let ts = sort $ map show $ filter isStructType (moduleRetainedTypes m)
   _ <- printf "unified types: %d\n" (length ts)
   forM_ ts $ \td -> putStrLn ("  " ++ td)

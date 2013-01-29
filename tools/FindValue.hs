@@ -18,7 +18,7 @@ main = do
   fname : nodes <- getArgs
   let nodeSet = HS.fromList (map read nodes)
   mm <- parseLLVMFile defaultParserOptions fname
-  let vals = either error (findNodes nodeSet) mm
+  let vals = findNodes nodeSet mm
   mapM_ showValue vals
 
 findNodes :: HashSet Int -> Module -> [Value]
