@@ -43,7 +43,7 @@ visualizeGraph :: (PrintDotRepr dg n)
                   -> IO ()
 visualizeGraph inFile outFile fmt optOptions fromModule toGraph  = do
   let p = parseLLVMFile defaultParserOptions
-  m <- buildModule optOptions p inFile
+  m <- buildModule [] optOptions p inFile
   let gs = fromModule m
 
   case fmt of
