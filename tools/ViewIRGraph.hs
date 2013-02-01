@@ -23,7 +23,7 @@ data Opts = Opts { outputFile :: Maybe FilePath
 
 cmdOpts :: Parser Opts
 cmdOpts = Opts
- <$> optional (option
+ <$> optional (strOption
      ( long "output"
      <> short 'o'
      <> metavar "FILE/DIR"
