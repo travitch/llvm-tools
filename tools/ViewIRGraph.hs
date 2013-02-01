@@ -64,12 +64,14 @@ realMain opts = do
       outFile = outputFile opts
       fmt = outputFormat opts
 
+      vizGraph = visualizeGraph inFile outFile fmt optOptions
+
   case gt of
-    Cfg -> visualizeGraph inFile outFile fmt optOptions mkCFGs cfgGraphvizRepr
-    Cdg -> visualizeGraph inFile outFile fmt optOptions mkCDGs cdgGraphvizRepr
-    Cg -> visualizeGraph inFile outFile fmt optOptions mkCG cgGraphvizRepr
-    Domtree -> visualizeGraph inFile outFile fmt optOptions mkDTs domTreeGraphvizRepr
-    Postdomtree -> visualizeGraph inFile outFile fmt optOptions mkPDTs postdomTreeGraphvizRepr
+    Cfg -> vizGraph mkCFGs cfgGraphvizRepr
+    Cdg -> vizGraph mkCDGs cdgGraphvizRepr
+    Cg -> vizGraph mkCG cgGraphvizRepr
+    Domtree -> vizGraph mkDTs domTreeGraphvizRepr
+    Postdomtree -> vizGraph mkPDTs postdomTreeGraphvizRepr
   where
     optOptions = [ "-mem2reg", "-basicaa" ]
 
