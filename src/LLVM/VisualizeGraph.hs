@@ -33,15 +33,14 @@ data OutputType = CanvasOutput GraphvizCanvas
 
 -- | Visualize a graph-based analysis with graphviz.  It handles many
 -- common options including both file and canvas output.
-visualizeGraph :: (PrintDotRepr dg n)
+visualizeGraph :: (ToGraphviz a)
                   => FilePath -- ^ Input file name
                   -> Maybe FilePath -- ^ Output file name
                   -> OutputType -- ^ Type of output requested
                   -> [String] -- ^ Module optimization flags
                   -> (Module -> [(String, a)]) -- ^ A function to turn a Module into some graphs
-                  -> (a -> dg n) -- ^ A function to turn each graph into a GraphViz DotGraph
                   -> IO ()
-visualizeGraph inFile outFile fmt optOptions fromModule toGraph  = do
+visualizeGraph inFile outFile fmt optOptions fromModule  = do
   let p = parseLLVMFile defaultParserOptions
   m <- buildModule [] optOptions p inFile
   let gs = fromModule m
@@ -66,23 +65,23 @@ visualizeGraph inFile outFile fmt optOptions fromModule toGraph  = do
       installStaticSubdir "img" gdir
 
       caps <- getNumCapabilities
-      let actions = map (makeFunctionPage toGraph gdir) gs
+      let actions = map (makeFunctionPage toGraphviz gdir) gs
       withPool caps $ \capPool -> parallel_ capPool actions
       writeHtmlIndex outFile' (map fst gs)
 
     -- If we are showing canvases, ignore function names
-    CanvasOutput o -> mapM_ (\(_,g) -> runGraphvizCanvas' (toGraph g) o) gs
+    CanvasOutput o -> mapM_ (\(_,g) -> runGraphvizCanvas' (toGraphviz g) o) gs
 
     FileOutput o -> do
       when (isNothing outFile) $ ioError $ userError "Output file not specified"
       let Just outFile' = outFile
       case gs of
-        [(_, g)] -> runGraphviz (toGraph g) o outFile' >> return ()
+        [(_, g)] -> runGraphviz (toGraphviz g) o outFile' >> return ()
         _ -> do
           -- If we have more than one function, put all of them in
           -- the given directory
           createDirectoryIfMissing True outFile'
-          mapM_ (writeDotGraph toGraph outFile' o) gs
+          mapM_ (writeDotGraph toGraphviz outFile' o) gs
 
 installStaticFile :: FilePath -> FilePath -> IO ()
 installStaticFile dir name = do

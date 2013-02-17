@@ -1,3 +1,4 @@
+{-# LANGUAGE NoMonomorphismRestriction #-}
 module Main ( main ) where
 
 import Control.Arrow
@@ -67,11 +68,11 @@ realMain opts = do
       vizGraph = visualizeGraph inFile outFile fmt optOptions
 
   case gt of
-    Cfg -> vizGraph mkCFGs cfgGraphvizRepr
-    Cdg -> vizGraph mkCDGs cdgGraphvizRepr
-    Cg -> vizGraph mkCG cgGraphvizRepr
-    Domtree -> vizGraph mkDTs domTreeGraphvizRepr
-    Postdomtree -> vizGraph mkPDTs postdomTreeGraphvizRepr
+    Cfg -> vizGraph mkCFGs
+    Cdg -> vizGraph mkCDGs
+    Cg -> vizGraph mkCG
+    Domtree -> vizGraph mkDTs
+    Postdomtree -> vizGraph mkPDTs
   where
     optOptions = [ "-mem2reg", "-basicaa" ]
 
@@ -79,21 +80,21 @@ mkPDTs :: Module -> [(String, PostdominatorTree)]
 mkPDTs m = map (getFuncName &&& toTree) fs
   where
     fs = moduleDefinedFunctions m
-    toTree = postdominatorTree . reverseCFG . mkCFG
+    toTree = postdominatorTree . controlFlowGraph
 
 mkDTs :: Module -> [(String, DominatorTree)]
 mkDTs m = map (getFuncName &&& toTree) fs
   where
     fs = moduleDefinedFunctions m
-    toTree = dominatorTree . mkCFG
+    toTree = dominatorTree . controlFlowGraph
 
 mkCG :: Module -> [(String, CallGraph)]
-mkCG m = [("Module", mkCallGraph m aa [])]
+mkCG m = [("Module", callGraph m aa [])]
   where
     aa = runPointsToAnalysis m
 
 mkCFGs :: Module -> [(String, CFG)]
-mkCFGs m = map (getFuncName &&& mkCFG) fs
+mkCFGs m = map (getFuncName &&& controlFlowGraph) fs
   where
     fs = moduleDefinedFunctions m
 
@@ -101,7 +102,7 @@ mkCDGs :: Module -> [(String, CDG)]
 mkCDGs m = map (getFuncName &&& toCDG) fs
   where
     fs = moduleDefinedFunctions m
-    toCDG = controlDependenceGraph . mkCFG
+    toCDG = controlDependenceGraph . controlFlowGraph
 
 getFuncName :: Function -> String
 getFuncName = identifierAsString . functionName
