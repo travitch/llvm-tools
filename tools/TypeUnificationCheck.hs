@@ -65,5 +65,5 @@ main = do
 isStructType :: Type -> Bool
 isStructType t =
   case t of
-    TypeStruct (Just _) _ _ -> True
+    TypeStruct (Right _) _ _ -> True
     _ -> False
