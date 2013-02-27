@@ -3,6 +3,8 @@ visualizations include static call graphs, CFGs, CDGs, dominator
 trees, and some simple escape graphs.  Output formats include most
 graphviz-supported formats, along with an HTML-based format.
 
+# Usage
+
 Options for the visualizer:
 
     -o --output=[FILE or DIR]  The destination of a file output
@@ -22,3 +24,44 @@ always a directory.
 The Html format is special.  It produces an SVG embedded in an HTML
 page.  The SVG can be navigated (via panning and zooming) using an
 openstreetmap-style interface (it uses the OpenLayers library).
+
+# Dependencies
+
+This package depends on a few other Haskell libraries that are not yet
+on Hackage:
+
+ * hbgl
+ * ifscs
+ * llvm-base-types
+ * llvm-data-interop
+ * llvm-analysis
+
+Additionally, it requires that you have the LLVM shared libraries (versions
+3.0-3.2) and tools installed on your system (`llvm-config` must be in your
+`PATH`).
+
+# Installation
+Installation would look something like:
+
+```bash
+REPOSITORIES="hbgl-experimental
+ifscs
+itanium-abi
+llvm-base-types
+llvm-data-interop
+llvm-analysis
+llvm-tools"
+
+# Download the repositories
+for REPO in $REPOSITORIES
+do
+  git clone git://github.com/travitch/$REPO.git
+done
+
+# Add ./ prefixes to each repository (for cabal)
+TOINSTALL=`echo ./$REPOSITORIES  | sed 's: : ./:g'`
+
+# Build the tools along with dependencies
+cabal install $TOINSTALL
+```
+
