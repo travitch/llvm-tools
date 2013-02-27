@@ -25,6 +25,9 @@ The Html format is special.  It produces an SVG embedded in an HTML
 page.  The SVG can be navigated (via panning and zooming) using an
 openstreetmap-style interface (it uses the OpenLayers library).
 
+Input files can be LLVM bitcode files, LLVM assembly files, or C/C++ source
+files.
+
 # Dependencies
 
 This package depends on a few other Haskell libraries that are not yet
