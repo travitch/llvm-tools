@@ -34,6 +34,7 @@ This package depends on a few other Haskell libraries that are not yet
 on Hackage:
 
  * hbgl
+ * haggle
  * ifscs
  * llvm-base-types
  * llvm-data-interop
@@ -48,6 +49,7 @@ Installation would look something like:
 
 ```bash
 REPOSITORIES="hbgl-experimental
+haggle
 ifscs
 itanium-abi
 llvm-base-types
