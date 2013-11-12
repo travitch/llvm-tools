@@ -112,13 +112,13 @@ getFuncName = identifierAsString . functionName
 -- Command line helpers
 
 
-parseOutputType :: String -> Either ParseError OutputType
+parseOutputType :: String -> ReadM OutputType
 parseOutputType fmt =
   case fmt of
-    "Html" -> Right HtmlOutput
+    "Html" -> return HtmlOutput
     _ -> case reads fmt of
-      [(Gtk, [])] -> Right $ CanvasOutput Gtk
-      [(Xlib, [])] -> Right $ CanvasOutput Xlib
+      [(Gtk, [])] -> return $ CanvasOutput Gtk
+      [(Xlib, [])] -> return $ CanvasOutput Xlib
       _ -> case reads fmt of
-        [(gout, [])] -> Right $ FileOutput gout
-        _ -> Left $ ErrorMsg "Invalid output type"
+        [(gout, [])] -> return $ FileOutput gout
+        _ -> readerError "Invalid output type"
