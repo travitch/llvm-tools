@@ -139,7 +139,7 @@ toExt :: GraphvizOutput -> String
 toExt o =
   case o of
     Canon -> "dot"
-    XDot -> "dot"
+    XDot {} -> "dot"
     Eps -> "eps"
     Fig -> "fig"
     Jpeg -> "jpg"
